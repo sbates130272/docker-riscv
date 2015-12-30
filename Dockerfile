@@ -5,7 +5,7 @@
 #
 
 # Pull base image (use Wily for now).
-FROM dockerfile/ubuntu:15.10
+FROM ubuntu:15.10
 
 # Set the maintainer
 MAINTAINER Stephen Bates (sbates130272) <sbates@raithlin.com>

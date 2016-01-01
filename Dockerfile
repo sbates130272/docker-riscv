@@ -37,9 +37,8 @@ ENV RISCV /opt/riscv
 
 # Install the RISC-V branch of the Linux kernel
 WORKDIR /opt/riscv/git
-RUN curl -L https://www.kernel.org/pub/linux/kernel/\
-  v3.x/linux-3.14.41.tar.xz | tar -xJ && \
-  cd linux-3.14.41 && git init && \
+RUN curl -L https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.41.tar.xz | \
+  tar -xJ && cd linux-3.14.41 && git init && \
   git remote add origin https://github.com/riscv/riscv-linux.git && \
   git fetch && git checkout -f -t origin/master && \
   make ARCH=riscv defconfig && make ARCH=riscv -j vmlinux
@@ -51,8 +50,8 @@ RUN git clone https://github.com/riscv/riscv-gnu-toolchain.git
 # Before building the GNU tools make sure the headers there are up-to
 # date.
 RUN make ARCH=riscv headers_check &&
-  make ARCH=riscv INSTALL_HDR_PATH=$RISCV/git/riscv-gnu-toolchain/\
-  linux-headers headers_install
+  make ARCH=riscv INSTALL_HDR_PATH=\
+  $RISCV/git/riscv-gnu-toolchain/linux-headers headers_install
 
 # Now build the GNU toolchain for RISCV. We enable support for both 32
 # and 64 bit RISC-V processors.

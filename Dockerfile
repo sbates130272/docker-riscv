@@ -35,13 +35,12 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /opt/riscv/git
 ENV RISCV /opt/riscv
 
-# Install the RISC-V branch of the Linux kernel
+# Obtain the RISC-V branch of the Linux kernel
 WORKDIR /opt/riscv/git
 RUN curl -L https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.41.tar.xz | \
   tar -xJ && cd linux-3.14.41 && git init && \
   git remote add origin https://github.com/riscv/riscv-linux.git && \
-  git fetch && git checkout -f -t origin/master && \
-  make ARCH=riscv defconfig && make ARCH=riscv -j vmlinux
+  git fetch && git checkout -f -t origin/master
 
 # Fetch the GNU toolchain source
 WORKDIR /opt/riscv/git
@@ -49,21 +48,25 @@ RUN git clone https://github.com/riscv/riscv-gnu-toolchain.git
 
 # Before building the GNU tools make sure the headers there are up-to
 # date.
-RUN make ARCH=riscv headers_check &&
+WORKDIR /opt/riscv/git/linux-3.14.41
+RUN make ARCH=riscv headers_check && \
   make ARCH=riscv INSTALL_HDR_PATH=\
   $RISCV/git/riscv-gnu-toolchain/linux-headers headers_install
 
 # Now build the GNU toolchain for RISCV. We enable support for both 32
 # and 64 bit RISC-V processors.
-RUN cd riscv-gnu-toolchain && \
-  ./configure --prefix=/opt/riscv --enable-multilib && \
+WORKDIR /opt/riscv/git/riscv-gnu-toolchain
+RUN ./configure --prefix=/opt/riscv --enable-multilib && \
   make linux
+
+# Now build the linux kernel image
+WORKDIR /opt/riscv/git/linux-3.14.41
+RUN make ARCH=riscv defconfig && make ARCH=riscv -j vmlinux
 
 # Install Spike, the ISA simulator
 WORKDIR /opt/riscv/git
 RUN git clone https://github.com/riscv/riscv-isa-sim.git && \
-  cd riscv-isa-sim && \
-  mkdir build && cd build && \
+  cd riscv-isa-sim && mkdir build && cd build && \
   ../configure --prefix=$RISCV --with-fesvr=$RISCV && \
   make && make install
 

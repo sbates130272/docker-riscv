@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
   autoconf \
   automake \
   autotools-dev \
+  bc \
   bison \
   build-essential \
   curl \
@@ -32,43 +33,45 @@ RUN apt-get update && apt-get install -y \
   texinfo
 
 # Make a working folder and set the necessary environment variables.
-RUN mkdir -p /opt/riscv/git
 ENV RISCV /opt/riscv
+ENV NUMJOBS 1
+RUN mkdir -p $RISCV
+
+# Add the GNU utils bin folder to the path.
+ENV PATH $RISCV/bin:$PATH
+
+# Obtain the RISCV-tools repo which consists of a number of submodules
+# so make sure we get those too.
+WORKDIR $RISCV
+RUN git clone https://github.com/riscv/riscv-tools.git && \
+  cd riscv-tools && git submodule update --init --recursive
 
 # Obtain the RISC-V branch of the Linux kernel
-WORKDIR /opt/riscv/git
+WORKDIR $RISCV
 RUN curl -L https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.41.tar.xz | \
   tar -xJ && cd linux-3.14.41 && git init && \
   git remote add origin https://github.com/riscv/riscv-linux.git && \
   git fetch && git checkout -f -t origin/master
 
-# Fetch the GNU toolchain source
-WORKDIR /opt/riscv/git
-RUN git clone https://github.com/riscv/riscv-gnu-toolchain.git
-
 # Before building the GNU tools make sure the headers there are up-to
 # date.
-WORKDIR /opt/riscv/git/linux-3.14.41
+WORKDIR $RISCV/linux-3.14.41
 RUN make ARCH=riscv headers_check && \
   make ARCH=riscv INSTALL_HDR_PATH=\
-  $RISCV/git/riscv-gnu-toolchain/linux-headers headers_install
+  $RISCV/riscv-tools/riscv-gnu-toolchain/linux-headers headers_install
 
-# Now build the GNU toolchain for RISCV. We enable support for both 32
-# and 64 bit RISC-V processors.
-WORKDIR /opt/riscv/git/riscv-gnu-toolchain
-RUN ./configure --prefix=/opt/riscv --enable-multilib && \
-  make linux
+# Now build the toolchain for RISCV. Set -j 1 to avoid issues on VMs.
+WORKDIR $RISCV/riscv-tools
+RUN sed -i 's/JOBS=16/JOBS=$NUMJOBS/' build.common && \
+  ./build.sh
 
-# Now build the linux kernel image
-WORKDIR /opt/riscv/git/linux-3.14.41
-RUN make ARCH=riscv defconfig && make ARCH=riscv -j vmlinux
+# Run a simple test to make sure at least spike, pk and the newlib
+# compiler are setup correctly.
+RUN mkdir -p $RISCV/test
+WORKDIR $RISCV/test
+RUN echo '#include <stdio.h>\n int main(void) { printf("Hello \
+  world!\\n"); return 0; }' > hello.c && \
+  riscv64-unknown-elf-gcc -o hello hello.c && spike pk hello
 
-# Install Spike, the ISA simulator
-WORKDIR /opt/riscv/git
-RUN git clone https://github.com/riscv/riscv-isa-sim.git && \
-  cd riscv-isa-sim && mkdir build && cd build && \
-  ../configure --prefix=$RISCV --with-fesvr=$RISCV && \
-  make && make install
-
-# Set the entrypoint in the $RISCV folder.
-ENTRYPOINT $RISCV
+# Set the WORKDIR to be in the $RISCV folder and we are done!
+WORKDIR $RISCV

@@ -73,5 +73,16 @@ RUN echo '#include <stdio.h>\n int main(void) { printf("Hello \
   world!\\n"); return 0; }' > hello.c && \
   riscv64-unknown-elf-gcc -o hello hello.c && spike pk hello
 
+# Now build the glibc toolchain as well. This complements the newlib
+# tool chain we added above.
+WORKDIR $RISCV/riscv-tools/riscv-gnu-toolchain
+RUN ./configure --prefix=$RISCV && make linux
+
+# Now build the linux kernel image. Note that the RISCV Linux GitHub
+# site has a -j in the make command and that seems to break things on
+# a VM.
+WORKDIR $RISCV/linux-3.14.41
+RUN make ARCH=riscv defconfig && make ARCH=riscv -j $NUMJOBS vmlinux
+
 # Set the WORKDIR to be in the $RISCV folder and we are done!
 WORKDIR $RISCV

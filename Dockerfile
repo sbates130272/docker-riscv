@@ -84,5 +84,30 @@ RUN ./configure --prefix=$RISCV && make linux
 WORKDIR $RISCV/linux-3.14.41
 RUN make ARCH=riscv defconfig && make ARCH=riscv -j $NUMJOBS vmlinux
 
+# Now install busybox as we will use that in our linux based
+# environment.
+WORKDIR $RISCV
+RUN curl -L http://busybox.net/downloads/busybox-1.21.1.tar.bz2 | \
+  tar -xj && cd busybox-1.21.1 && \
+  curl -L http://riscv.org/install-guides/busybox-riscv.config > \
+  .config && make -j $NUMJOBS
+
+# Create a root filesystem with the necessary files in it to boot up
+# the Linux environment and jump into busybox.
+WORKDIR $RISCV/linux-3.14.41
+RUN dd if=/dev/zero of=root.bin bs=1M count=64 && \
+  mkfs.ext2 -F root.bin && mkdir mnt && mount -o loop \
+  root.bin mnt && cd mnt && mkdir -p bin etc dev lib proc \
+  sbin sys tmp usr usr/bin usr/lib usr/sbin && \
+  cp $RISCV/busybox-1.21.1/busybox bin && \
+  curl -L http://riscv.org/install-guides/linux-inittab > \
+  etc/inittab && ln -s ./bin/busybox sbin/init && cd .. && \
+  umount mnt
+
+# Now do a test of booting Linux and using the root filesystem we just
+# created.
+WORKDIR $RISCV/linux-3.14.41
+RUN spike +disk=root.bin bbl vmlinux
+
 # Set the WORKDIR to be in the $RISCV folder and we are done!
 WORKDIR $RISCV

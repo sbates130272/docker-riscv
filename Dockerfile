@@ -93,16 +93,19 @@ RUN curl -L http://busybox.net/downloads/busybox-1.21.1.tar.bz2 | \
   .config && make -j $NUMJOBS
 
 # Create a root filesystem with the necessary files in it to boot up
-# the Linux environment and jump into busybox.
+# the Linux environment and jump into busybox. Note that since we
+# can't run mount inside a docker container we, for now, download this
+# root.bin file from a hosted website (GitHub in this case).
 WORKDIR $RISCV/linux-3.14.41
-RUN dd if=/dev/zero of=root.bin bs=1M count=64 && \
-  mkfs.ext2 -F root.bin && mkdir mnt && mount -o loop \
-  root.bin mnt && cd mnt && mkdir -p bin etc dev lib proc \
-  sbin sys tmp usr usr/bin usr/lib usr/sbin && \
-  cp $RISCV/busybox-1.21.1/busybox bin && \
-  curl -L http://riscv.org/install-guides/linux-inittab > \
-  etc/inittab && ln -s ./bin/busybox sbin/init && cd .. && \
-  umount mnt
+#RUN dd if=/dev/zero of=root.bin bs=1M count=64 && \
+#  mkfs.ext2 -F root.bin && mkdir mnt && mount -o loop \
+#  root.bin mnt && cd mnt && mkdir -p bin etc dev lib proc \
+#  sbin sys tmp usr usr/bin usr/lib usr/sbin && \
+#  cp $RISCV/busybox-1.21.1/busybox bin && \
+#  curl -L http://riscv.org/install-guides/linux-inittab > \
+#  etc/inittab && ln -s ./bin/busybox sbin/init && cd .. && \
+#  umount mnt
+RUN curl -L http://github.com/sbates130272/riscv/master/blob/root.bin
 
 # Now do a test of booting Linux and using the root filesystem we just
 # created.

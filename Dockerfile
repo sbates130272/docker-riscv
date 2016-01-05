@@ -33,7 +33,9 @@ RUN apt-get update && apt-get install -y \
   libmpfr-dev \
   libgmp-dev \
   libtool \
+  ncurses-dev \
   patchutils \
+  squshfs-tools \
   texinfo
 
 # Make a working folder and set the necessary environment variables.
@@ -69,7 +71,7 @@ WORKDIR $RISCV/riscv-tools
 RUN sed -i 's/JOBS=16/JOBS=$NUMJOBS/' build.common && \
   ./build.sh
 
-# Run a simple test to make sure at least spike, pk and the newlib
+# Run a simple test to make sure at least spike, pk and the Newlib
 # compiler are setup correctly.
 RUN mkdir -p $RISCV/test
 WORKDIR $RISCV/test
@@ -78,46 +80,57 @@ RUN echo '#include <stdio.h>\n int main(void) { printf("Hello \
   riscv64-unknown-elf-gcc -o hello hello.c && spike pk hello
 
 # Now build the glibc toolchain as well. This complements the newlib
-# tool chain we added above.
+# tool chain we added above. When done we clean up the intermediate
+# folders as this saves a ton (>6G of space). 
 WORKDIR $RISCV/riscv-tools/riscv-gnu-toolchain
-RUN ./configure --prefix=$RISCV && make linux
+RUN ./configure --prefix=$RISCV && make linux && rm -rf \
+  build-binutils-linux \
+  build-gcc-linux-stage1 \
+  build-gcc-linux-stage2 \
+  build-glibc-linux-headers \
+  build-glibc-linux64 \
+  src \
+  stamps
 
-# Now build the linux kernel image. Note that the RISCV Linux GitHub
+# Now build the linux kernel image. Note that the RISC-V Linux GitHub
 # site has a -j in the make command and that seems to break things on
-# a VM so here we use NUMJOBS to set the parallelism.
+# a VM so here we use NUMJOBS to set the parallelism. We also get the
+# .config from my GitHub site since we have enabled more than the
+# default (squashfs for example).
 WORKDIR $RISCV/linux-3.14.41
-RUN make ARCH=riscv defconfig && make ARCH=riscv -j $NUMJOBS vmlinux
+RUN curl -L http://github.com/sbates130272/riscv/master/blob/\
+.config-linux-3.14.41 > .config && make ARCH=riscv -j $NUMJOBS \
+  vmlinux  
 
+# Now create a mnt subfolder that we will squashfs into our root
+# filesystem for the linux environment. 
+WORKDIR $RISCV
+RUN mkdir mnt && cd mnt && mkdir -p bin etc dev lib proc \
+  sbin sys tmp usr usr/bin usr/lib usr/sbin
+  
 # Now install busybox as we will use that in our linux based
-# environment.
+# environment. We grab the .config for this from our GitHub site
+# because we want more stuff in it than the default and we want to
+# make sure it installs to the right place (using some sed magic).
 WORKDIR $RISCV
 RUN curl -L http://busybox.net/downloads/busybox-1.21.1.tar.bz2 | \
   tar -xj && cd busybox-1.21.1 && \
-  curl -L http://riscv.org/install-guides/busybox-riscv.config > \
-  .config && make -j $NUMJOBS
+  curl -L http://github.com/sbates130272/riscv/master/blob/\
+.config-busybox-1.21.1 > .config && make -j $NUMJOBS
 
-# Create a root filesystem with the necessary files in it to boot up
-# the Linux environment and jump into busybox. Note that since we
-# can't run mount inside a docker container we, for now, download this
-# root.bin file from a hosted website (GitHub in this case). To
-# generate this root.bin.tar.bz2 file run the genrootdisk.sh script
-# located in https://github.com/sbates130272/docker-riscv.
-WORKDIR $RISCV/linux-3.14.41
-RUN curl -L \
-  https://github.com/sbates130272/\
-docker-riscv/blob/master/root.bin.tar.bz2?raw=true | \
-  tar -xj
+# Create the root filesystem using squashfs.
+WORKDIR $RISCV
+RUN mksquashfs mnt root.bin.sqsh && cd .. && \
+  rm -rf mnt
 
 # Set the WORKDIR to be in the $RISCV folder and we are done!
 WORKDIR $RISCV
 
 # Now you can launch the container and run a command like:
 #
-# spike +disk=linux-4.14.41/root.bin bbl linux-4.14.41/vmlinux
+# spike -m128 -p1 +disk=root.bin.sqsh bbl linux-3.14.41/vmlinux
 #
 # Note that after the first boot of the root filesystem you should
-# edit the root.bin file as per the instructions in
-# https://github.com/riscv/riscv-tools. Note that this is hard to do
-# inside the container since you cannot issue the mount command (a -v
-# options to the run command might prove easier. I hope to get a
-# better fix for this over time.
+# edit the root.bin.sq file as per the instructions in
+# https://github.com/riscv/riscv-tools. I hope to get a better fix for
+# this over time. 

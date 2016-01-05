@@ -108,10 +108,16 @@ RUN curl -L \
 docker-riscv/blob/master/root.bin.tar.bz2?raw=true | \
   tar -xj
 
-# Now do a test of booting Linux and using the root filesystem we just
-# created.
-WORKDIR $RISCV/linux-3.14.41
-RUN spike +disk=root.bin bbl vmlinux
-
 # Set the WORKDIR to be in the $RISCV folder and we are done!
 WORKDIR $RISCV
+
+# Now you can launch the container and run a command like:
+#
+# spike +disk=linux-4.14.41/root.bin bbl linux-4.14.41/vmlinux
+#
+# Note that after the first boot of the root filesystem you should
+# edit the root.bin file as per the instructions in
+# https://github.com/riscv/riscv-tools. Note that this is hard to do
+# inside the container since you cannot issue the mount command (a -v
+# options to the run command might prove easier. I hope to get a
+# better fix for this over time.

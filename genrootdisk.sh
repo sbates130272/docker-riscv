@@ -10,5 +10,6 @@ dd if=/dev/zero of=root.bin bs=1M count=64 && \
   sbin sys tmp usr usr/bin usr/lib usr/sbin && \
   cp ../busybox bin && curl -L \
   http://riscv.org/install-guides/linux-inittab > \
-  etc/inittab && ln -T ./bin/busybox sbin/init && \
-  cd .. && umount mnt && rm -rf mnt
+  etc/inittab && cd sbin && ln -s ../bin/busybox init && \
+  cd ../.. && umount mnt && rm -rf mnt && tar -cjf \
+  root.bin.tar.bz2 root.bin

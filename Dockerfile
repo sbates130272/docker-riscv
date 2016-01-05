@@ -3,6 +3,10 @@
 #
 # https://github.com/sbates130272/docker-riscv
 #
+# This Dockerfile creates a container full of lots of useful tools for
+# RISC-V development. See associated README.md for more
+# information. This Dockerfile is mostly based on the instructions
+# found at https://github.com/riscv/riscv-tools.
 
 # Pull base image (use Wily for now).
 FROM ubuntu:15.10
@@ -80,7 +84,7 @@ RUN ./configure --prefix=$RISCV && make linux
 
 # Now build the linux kernel image. Note that the RISCV Linux GitHub
 # site has a -j in the make command and that seems to break things on
-# a VM.
+# a VM so here we use NUMJOBS to set the parallelism.
 WORKDIR $RISCV/linux-3.14.41
 RUN make ARCH=riscv defconfig && make ARCH=riscv -j $NUMJOBS vmlinux
 
@@ -95,19 +99,14 @@ RUN curl -L http://busybox.net/downloads/busybox-1.21.1.tar.bz2 | \
 # Create a root filesystem with the necessary files in it to boot up
 # the Linux environment and jump into busybox. Note that since we
 # can't run mount inside a docker container we, for now, download this
-# root.bin file from a hosted website (GitHub in this case).
+# root.bin file from a hosted website (GitHub in this case). To
+# generate this root.bin.tar.bz2 file run the genrootdisk.sh script
+# located in https://github.com/sbates130272/docker-riscv.
 WORKDIR $RISCV/linux-3.14.41
-#RUN dd if=/dev/zero of=root.bin bs=1M count=64 && \
-#  mkfs.ext2 -F root.bin && mkdir mnt && mount -o loop \
-#  root.bin mnt && cd mnt && mkdir -p bin etc dev lib proc \
-#  sbin sys tmp usr usr/bin usr/lib usr/sbin && \
-#  cp $RISCV/busybox-1.21.1/busybox bin && \
-#  curl -L http://riscv.org/install-guides/linux-inittab > \
-#  etc/inittab && ln -s ./bin/busybox sbin/init && cd .. && \
-#  umount mnt
 RUN curl -L \
-  https://github.com/sbates130272/docker-riscv/blob/master/root.bin?raw=true > \
-  root.bin
+  https://github.com/sbates130272/\
+docker-riscv/blob/master/root.bin.tar.bz2?raw=true | \
+  tar -xj
 
 # Now do a test of booting Linux and using the root filesystem we just
 # created.

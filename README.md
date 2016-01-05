@@ -2,8 +2,8 @@
 
 This repository contains a **Dockerfile** of
 [sbates130272/docker-riscv](https://github.com/sbates130272/docker-riscv)
-for [Docker](https://www.docker.com/)'s [automated
-build](https://registry.hub.docker.com/u/sbates130272/riscv) published
+for [Docker](https://www.docker.com/)'s
+[Hub](https://registry.hub.docker.com/u/sbates130272/riscv) published 
 to the public [Docker Hub Registry](https://registry.hub.docker.com/).
 
 ### Information
@@ -17,3 +17,11 @@ https://github.com/riscv
 and include an ISA simulator (Spike), a GCC toolchain for the RISC-V
 ISA, the Linux Kernel for this kernel and other tools. 
 
+### Notes
+
+   1. Note this Dockerfile does not run through the automated build
+   process because it exceeds the two hour build limit.
+
+   2. Note that we can't run mount inside a container so we download
+   the root.bin file using CURL. Hoping to find a better solution to
+   this issue in due course.  

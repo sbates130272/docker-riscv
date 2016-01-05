@@ -105,7 +105,9 @@ WORKDIR $RISCV/linux-3.14.41
 #  curl -L http://riscv.org/install-guides/linux-inittab > \
 #  etc/inittab && ln -s ./bin/busybox sbin/init && cd .. && \
 #  umount mnt
-RUN curl -L http://github.com/sbates130272/riscv/master/blob/root.bin
+RUN curl -L \
+  https://github.com/sbates130272/docker-riscv/blob/master/root.bin?raw=true > \
+  root.bin
 
 # Now do a test of booting Linux and using the root filesystem we just
 # created.

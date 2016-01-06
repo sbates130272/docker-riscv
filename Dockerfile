@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y \
   libtool \
   ncurses-dev \
   patchutils \
-  squshfs-tools \
+  squashfs-tools \
   texinfo
 
 # Make a working folder and set the necessary environment variables.

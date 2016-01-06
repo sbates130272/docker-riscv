@@ -21,7 +21,3 @@ ISA, the Linux Kernel for this kernel and other tools.
 
    1. Note this Dockerfile does not run through the automated build
    process because it exceeds the two hour build limit.
-
-   2. Note that we can't run mount inside a container so we download
-   the root.bin file using CURL. Hoping to find a better solution to
-   this issue in due course.  

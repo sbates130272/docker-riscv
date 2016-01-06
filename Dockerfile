@@ -98,15 +98,16 @@ RUN ./configure --prefix=$RISCV && make linux && rm -rf \
 # .config from my GitHub site since we have enabled more than the
 # default (squashfs for example).
 WORKDIR $RISCV/linux-3.14.41
-RUN curl -L http://github.com/sbates130272/riscv/master/blob/\
-.config-linux-3.14.41 > .config && make ARCH=riscv -j $NUMJOBS \
+RUN curl -L https://raw.githubusercontent.com/sbates130272/docker-riscv/\
+master/.config-linux-3.14.41 > .config && make ARCH=riscv -j $NUMJOBS \
   vmlinux  
 
 # Now create a mnt subfolder that we will squashfs into our root
 # filesystem for the linux environment. 
 WORKDIR $RISCV
 RUN mkdir mnt && cd mnt && mkdir -p bin etc dev lib proc \
-  sbin sys tmp usr usr/bin usr/lib usr/sbin
+  sbin sys tmp usr usr/bin usr/lib usr/sbin &&  curl -L \
+  http://riscv.org/install-guides/linux-inittab > etc/inittab
   
 # Now install busybox as we will use that in our linux based
 # environment. We grab the .config for this from our GitHub site
@@ -114,9 +115,9 @@ RUN mkdir mnt && cd mnt && mkdir -p bin etc dev lib proc \
 # make sure it installs to the right place (using some sed magic).
 WORKDIR $RISCV
 RUN curl -L http://busybox.net/downloads/busybox-1.21.1.tar.bz2 | \
-  tar -xj && cd busybox-1.21.1 && \
-  curl -L http://github.com/sbates130272/riscv/master/blob/\
-.config-busybox-1.21.1 > .config && make -j $NUMJOBS
+  tar -xj && cd busybox-1.21.1 && curl -L https://raw.githubusercontent\
+.com/sbates130272/docker-riscv/master/.config-busybox-1.21.1 > \
+  .config && make -j $NUMJOBS install
 
 # Create the root filesystem using squashfs.
 WORKDIR $RISCV
@@ -130,7 +131,3 @@ WORKDIR $RISCV
 #
 # spike -m128 -p1 +disk=root.bin.sqsh bbl linux-3.14.41/vmlinux
 #
-# Note that after the first boot of the root filesystem you should
-# edit the root.bin.sq file as per the instructions in
-# https://github.com/riscv/riscv-tools. I hope to get a better fix for
-# this over time. 

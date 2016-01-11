@@ -90,6 +90,7 @@ RUN ./configure --prefix=$RISCV && make linux && rm -rf \
   build-glibc-linux-headers \
   build-glibc-linux64 \
   src \
+  build/src \
   stamps
 
 # Now build the linux kernel image. Note that the RISC-V Linux GitHub

@@ -15,7 +15,24 @@ located at
 https://github.com/riscv
 
 and include an ISA simulator (Spike), a GCC toolchain for the RISC-V
-ISA, the Linux Kernel for this kernel and other tools. 
+ISA, the Linux Kernel for this kernel and other tools.
+
+### Getting Started
+
+The best way to get started is to download the image for this
+container directly from Doc Hub and then run the container and play
+inside it. Here are the steps for that.
+
+   1. Install docker on your client.
+   2. docker pull sbates130272/riscv
+   3. docker run -it sbates130272/riscv
+   4. cd into one of the sub-folders of /opt/riscv and play. For
+   example in the /opt/riscv folder you can run
+   ```
+   spike -m128 -p1 +disk=root.bin.sqsh bbl linux-3.14.41/vmlinux
+   ```
+   to kick off the spike ISA simulator on a root filesystem awith
+   busybox nd the 3.14.41 version of the Linux kernel.
 
 ### Notes
 

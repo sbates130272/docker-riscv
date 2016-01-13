@@ -34,6 +34,13 @@ inside it. Here are the steps for that.
    to kick off the spike ISA simulator on a root filesystem awith
    busybox nd the 3.14.41 version of the Linux kernel.
 
+   5. You can attach external directories for access inside the docker
+   container:
+
+```
+   docker run -it -w $PWD -v $PWD:$PWD sbates130272/riscv
+```
+
 ### Notes
 
    1. Note this Dockerfile does not run through the automated build

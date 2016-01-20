@@ -129,10 +129,16 @@ WORKDIR $RISCV
 RUN mksquashfs mnt root.bin.sqsh && cd .. && \
   rm -rf mnt
 
+# To save some space we do a make distclean in the linux folder
+# (whilst copying the vmlinux out and back in again).
+WORKDIR $RISCV/linux-4.1.y
+RUN cp vmlinux ../ && make ARCH=riscv distclean \
+  && mv ../vmlinux .
+
 # Set the WORKDIR to be in the $RISCV folder and we are done!
 WORKDIR $RISCV
 
 # Now you can launch the container and run a command like:
 #
-# spike -m128 -p1 +disk=root.bin.sqsh bbl linux-3.14.41/vmlinux
+# spike -m128 -p1 +disk=root.bin.sqsh bbl linux-4.1.y/vmlinux
 #

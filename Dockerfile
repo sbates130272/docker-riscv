@@ -54,14 +54,18 @@ RUN git clone https://github.com/riscv/riscv-tools.git && \
 
 # Obtain the RISC-V branch of the Linux kernel
 WORKDIR $RISCV
-RUN curl -L https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.41.tar.xz | \
-  tar -xJ && cd linux-3.14.41 && git init && \
+RUN mkdir linux-4.1.y && cd linux-4.1.y && git init && \
   git remote add origin https://github.com/riscv/riscv-linux.git && \
-  git fetch && git checkout -f -t origin/master
+  git fetch && git checkout -b linux origin/linux-4.1.y-riscv
+
+#RUN curl -L https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.14.41.tar.xz | \
+#  tar -xJ && cd linux-3.14.41 && git init && \
+#  git remote add origin https://github.com/riscv/riscv-linux.git && \
+#  git fetch && git checkout -f -t origin/master
 
 # Before building the GNU tools make sure the headers there are up-to
 # date.
-WORKDIR $RISCV/linux-3.14.41
+WORKDIR $RISCV/linux-4.1.y
 RUN make ARCH=riscv headers_check && \
   make ARCH=riscv INSTALL_HDR_PATH=\
   $RISCV/riscv-tools/riscv-gnu-toolchain/linux-headers headers_install
@@ -81,7 +85,7 @@ RUN echo '#include <stdio.h>\n int main(void) { printf("Hello \
 
 # Now build the glibc toolchain as well. This complements the newlib
 # tool chain we added above. When done we clean up the intermediate
-# folders as this saves a ton (>6G of space). 
+# folders as this saves a ton (>6G of space).
 WORKDIR $RISCV/riscv-tools/riscv-gnu-toolchain
 RUN ./configure --prefix=$RISCV && make linux && rm -rf \
   build-binutils-linux \
@@ -98,18 +102,18 @@ RUN ./configure --prefix=$RISCV && make linux && rm -rf \
 # a VM so here we use NUMJOBS to set the parallelism. We also get the
 # .config from my GitHub site since we have enabled more than the
 # default (squashfs for example).
-WORKDIR $RISCV/linux-3.14.41
+WORKDIR $RISCV/linux-4.1.y
 RUN curl -L https://raw.githubusercontent.com/sbates130272/docker-riscv/\
-master/.config-linux-3.14.41 > .config && make ARCH=riscv -j $NUMJOBS \
-  vmlinux  
+master/.config-linux-4.1.y > .config && make ARCH=riscv -j $NUMJOBS \
+  vmlinux
 
 # Now create a mnt subfolder that we will squashfs into our root
-# filesystem for the linux environment. 
+# filesystem for the linux environment.
 WORKDIR $RISCV
 RUN mkdir mnt && cd mnt && mkdir -p bin etc dev lib proc \
   sbin sys tmp usr usr/bin usr/lib usr/sbin &&  curl -L \
   http://riscv.org/install-guides/linux-inittab > etc/inittab
-  
+
 # Now install busybox as we will use that in our linux based
 # environment. We grab the .config for this from our GitHub site
 # because we want more stuff in it than the default and we want to

@@ -1,4 +1,4 @@
-## RISC-V Dockerfile
+## RISC-V Dockerfile (Development Branch)
 
 This repository contains a **Dockerfile** of
 [sbates130272/docker-riscv](https://github.com/sbates130272/docker-riscv)
@@ -29,7 +29,7 @@ inside it. Here are the steps for that.
    4. cd into one of the sub-folders of /opt/riscv and play. For
    example in the /opt/riscv folder you can run
    ```
-   spike -m128 -p1 +disk=root.bin.sqsh bbl linux-3.14.41/vmlinux
+   spike -m128 -p1 +disk=root.bin.sqsh bbl linux-4.1.y/vmlinux
    ```
    to kick off the spike ISA simulator on a root filesystem awith
    busybox nd the 3.14.41 version of the Linux kernel.

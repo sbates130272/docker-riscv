@@ -50,12 +50,13 @@ ENV PATH $RISCV/bin:$PATH
 # Obtain the RISCV-tools repo which consists of a number of submodules
 # so make sure we get those too.
 WORKDIR $RISCV
-RUN git clone https://github.com/sifive/freedom-u-sdk.git
+RUN git clone https://github.com/sifive/freedom-u-sdk.git --recursive
 
 WORKDIR $RISCV/freedom-u-sdk
-RUN sed -i -E "s|(url = ).*linux\.git|\1"$P2P"|g" .gitmodules
+RUN git config --file=.gitmodules submodule.linux.url https://github.com/sbates130272/linux-p2pmem.git
+RUN git config --file=.gitmodules submodule.linux.branch riscv-p2p-sifive
 RUN git submodule sync
-RUN git submodule update --init --recursive
+RUN git submodule update --init --recursive --remote
 
 WORKDIR $RISCV/freedom-u-sdk/linux
 RUN git checkout riscv-p2p-sifive

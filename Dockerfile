@@ -54,6 +54,7 @@ RUN git clone https://github.com/sifive/freedom-u-sdk.git
 
 WORKDIR $RISCV/freedom-u-sdk
 RUN sed -i -E "s|(url = ).*linux\.git|\1"$P2P"|g" .gitmodules
+RUN git submodule sync
 RUN git submodule update --init --recursive
 
 WORKDIR $RISCV/freedom-u-sdk/linux

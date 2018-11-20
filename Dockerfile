@@ -65,11 +65,12 @@ RUN git config --file=.gitmodules submodule.linux.update none
 RUN git submodule sync && git submodule update --recursive --init && rm -rf linux
 RUN git clone https://github.com/sbates130272/linux-p2pmem.git linux
 
+WORKDIR $RV/freedom-u-sdk/linux
+RUN git checkout $P2PSHA
+
 WORKDIR $RV/freedom-u-sdk/conf
 COPY config-riscv-p2pdma-sifive-4.19-rc2 ./linux_defconfig
 
-WORKDIR $RV/freedom-u-sdk/linux
-RUN git checkout $P2PSHA
 
 WORKDIR $RV/freedom-u-sdk
 RUN make -j $NUMJOBS

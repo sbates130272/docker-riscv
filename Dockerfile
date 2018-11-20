@@ -52,7 +52,7 @@ RUN apt-get update && apt-get install -y \
 ENV RV /opt/riscv
 ENV NUMJOBS 16
 ENV P2P https://github.com/sbates130272/linux-p2pmem.git
-ENV P2PSHA c2b45b2fe26a8cfbbd1aca461ae7cf8a6dbef9ef
+ENV P2PSHA 9d93e875aa5e097a580a5128b9c9590eaf572427
 RUN mkdir -p $RV
 
 # Add the GNU utils bin folder to the path.
@@ -66,7 +66,7 @@ RUN git clone https://github.com/sifive/freedom-u-sdk.git
 WORKDIR $RV/freedom-u-sdk
 RUN git config --file=.gitmodules submodule.linux.update none
 RUN git submodule sync && git submodule update --recursive --init && rm -rf linux
-RUN git clone https://github.com/sbates130272/linux-p2pmem.git linux
+RUN git clone $P2P linux
 
 WORKDIR $RV/freedom-u-sdk/linux
 RUN git checkout $P2PSHA

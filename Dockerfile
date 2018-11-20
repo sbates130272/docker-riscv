@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y \
 	libgmp-dev \
 	libmpc-dev \
 	libmpfr-dev \
-	libpixman-1-dev
+	libpixman-1-dev \
 	libtool \
 	ncurses-dev \
 	patchutils \

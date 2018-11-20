@@ -30,12 +30,15 @@ RUN apt-get update && apt-get install -y \
 	gawk \
 	git \
 	gperf \
+	libglib2.0-dev \
+	libgmp-dev \
 	libmpc-dev \
 	libmpfr-dev \
-	libgmp-dev \
+	libpixman-1-dev
 	libtool \
 	ncurses-dev \
 	patchutils \
+	pkg-config \
 	python \
 	squashfs-tools \
 	sudo \

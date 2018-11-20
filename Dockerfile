@@ -69,8 +69,7 @@ WORKDIR $RV/freedom-u-sdk/linux
 RUN git checkout $P2PSHA
 
 WORKDIR $RV/freedom-u-sdk/conf
-COPY config-riscv-p2pdma-sifive-4.19-rc2 ./linux_defconfig
-
+COPY config-linux-freedom-u-sdk ./linux_defconfig
 
 WORKDIR $RV/freedom-u-sdk
 RUN make -j $NUMJOBS

@@ -1,12 +1,12 @@
 #
 # RISC-V Dockerfile
 #
-# https://github.com/sbates130272/docker-riscv
+# https://github.com/sbates130272/docker-RV
 #
 # This Dockerfile creates a container full of lots of useful tools for
 # RISC-V development. See associated README.md for more
 # information. This Dockerfile is mostly based on the instructions
-# found at https://github.com/riscv/riscv-tools.
+# found at https://github.com/RV/riscv-tools.
 
 # Pull base image (use Wily for now).
 FROM ubuntu:16.04
@@ -17,50 +17,57 @@ MAINTAINER Andrew Maier (amaier17) <andrew.maier@eideticom.com>
 # Install some base tools that we will need to get the risc-v
 # toolchain working.
 RUN apt-get update && apt-get install -y \
-  autoconf \
-  automake \
-  autotools-dev \
-  bc \
-  bison \
-  build-essential \
-  curl \
-  emacs24-nox \
-  flex \
-  gawk \
-  git \
-  gperf \
-  libmpc-dev \
-  libmpfr-dev \
-  libgmp-dev \
-  libtool \
-  ncurses-dev \
-  patchutils \
-  squashfs-tools \
-  texinfo
+	autoconf \
+	automake \
+	autotools-dev \
+	bc \
+	bison \
+	build-essential \
+	cpio \
+	curl \
+	emacs24-nox \
+	flex \
+	gawk \
+	git \
+	gperf \
+	libmpc-dev \
+	libmpfr-dev \
+	libgmp-dev \
+	libtool \
+	ncurses-dev \
+	patchutils \
+	python \
+	squashfs-tools \
+	sudo \
+	texinfo \
+	wget \
+	unzip \
+	vim \
+	zlib1g-dev
 
 # Make a working folder and set the necessary environment variables.
-ENV RISCV /opt/riscv
+ENV RV /opt/riscv
 ENV NUMJOBS 16
 ENV P2P https://github.com/sbates130272/linux-p2pmem.git
-RUN mkdir -p $RISCV
+ENV P2PSHA c2b45b2fe26a8cfbbd1aca461ae7cf8a6dbef9ef
+RUN mkdir -p $RV
 
 # Add the GNU utils bin folder to the path.
-ENV PATH $RISCV/bin:$PATH
+ENV PATH $RV/bin:$PATH
 
-# Obtain the RISCV-tools repo which consists of a number of submodules
+# Obtain the RV-tools repo which consists of a number of submodules
 # so make sure we get those too.
-WORKDIR $RISCV
-RUN git clone https://github.com/sifive/freedom-u-sdk.git --recursive
+WORKDIR $RV
+RUN git clone https://github.com/sifive/freedom-u-sdk.git
 
-WORKDIR $RISCV/freedom-u-sdk
-RUN git config --file=.gitmodules submodule.linux.url https://github.com/sbates130272/linux-p2pmem.git
-RUN git config --file=.gitmodules submodule.linux.branch riscv-p2p-sifive
-RUN git submodule sync
-RUN git submodule update --init --recursive --remote
+WORKDIR $RV/freedom-u-sdk
+RUN git config --file=.gitmodules submodule.linux.update none
+RUN git submodule sync && git submodule update --recursive --init && rm -rf linux
+RUN git clone https://github.com/sbates130272/linux-p2pmem.git linux
 
-WORKDIR $RISCV/freedom-u-sdk/linux
-RUN git checkout riscv-p2p-sifive
+WORKDIR $RV/freedom-u-sdk/linux
+RUN git checkout $P2PSHA
 
-WORKDIR $RISCV/freedom-u-sdk
-RUN make -j $NUMJOBS
+WORKDIR $RV/freedom-u-sdk
+#RUN make -j $NUMJOBS
 

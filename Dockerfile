@@ -8,7 +8,6 @@
 # information. This Dockerfile is mostly based on the instructions
 # found at https://github.com/RV/riscv-tools.
 
-# Pull base image (use Wily for now).
 FROM ubuntu:16.04
 
 # Set the maintainer
@@ -52,6 +51,7 @@ RUN apt-get update && apt-get install -y \
 # Make a working folder and set the necessary environment variables.
 ENV RV /opt/riscv
 ENV NUMJOBS 16
+ENV FREEDOMCHECKOUT eidetic
 RUN mkdir -p $RV
 
 # Add the GNU utils bin folder to the path.
@@ -63,10 +63,8 @@ WORKDIR $RV
 RUN git clone https://github.com/Eideticom/freedom-u-sdk.git
 
 WORKDIR $RV/freedom-u-sdk
+RUN git checkout $FREEDOMCHECKOUT
 RUN git submodule update --recursive --init
-
-WORKDIR $RV/freedom-u-sdk/conf
-COPY config-linux-freedom-u-sdk ./linux_defconfig
 
 WORKDIR $RV/freedom-u-sdk
 RUN make -j $NUMJOBS

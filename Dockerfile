@@ -52,7 +52,7 @@ RUN apt-get update && apt-get install -y \
 ENV RV /opt/riscv
 ENV NUMJOBS 16
 ENV P2P https://github.com/sbates130272/linux-p2pmem.git
-ENV P2PSHA 9d93e875aa5e097a580a5128b9c9590eaf572427
+ENV P2PSHA 7b5137305c0a6afa27fc3a6ad64db131518f6c5a
 RUN mkdir -p $RV
 
 # Add the GNU utils bin folder to the path.
@@ -61,7 +61,7 @@ ENV PATH $RV/bin:$PATH
 # Obtain the RV-tools repo which consists of a number of submodules
 # so make sure we get those too.
 WORKDIR $RV
-RUN git clone https://github.com/sifive/freedom-u-sdk.git
+RUN git clone https://github.com/amaier17/freedom-u-sdk.git
 
 WORKDIR $RV/freedom-u-sdk
 RUN git config --file=.gitmodules submodule.linux.update none
@@ -76,4 +76,4 @@ COPY config-linux-freedom-u-sdk ./linux_defconfig
 
 WORKDIR $RV/freedom-u-sdk
 RUN make -j $NUMJOBS
-
+RUN make -j $NUMJOBS prep-qemu

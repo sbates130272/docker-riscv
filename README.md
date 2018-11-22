@@ -1,47 +1,92 @@
-## RISC-V Dockerfile (Development Branch)
-
-This repository contains a **Dockerfile** of
-[sbates130272/docker-riscv](https://github.com/sbates130272/docker-riscv)
-for [Docker](https://www.docker.com/)'s
-[Hub](https://registry.hub.docker.com/u/sbates130272/riscv) published 
-to the public [Docker Hub Registry](https://registry.hub.docker.com/).
+## Dockerfile for SiFive freedom-u-sdk for RISCV CPUs
 
 ### Information
 
-This container includes a number of tools and dependencies needed to
-develop for the RISC-V open-source CPU. Many of these tools can be
-located at 
+This container includes a number of tools and dependencies useful for
+developing on for the SiFive freedom-u board and the Microsemi HiFive
+expansion card.
 
-https://github.com/riscv
+Once you get everything in this repo up and running you should have
+the following:
 
-and include an ISA simulator (Spike), a GCC toolchain for the RISC-V
-ISA, the Linux Kernel for this kernel and other tools.
+* A toolchain.
+* A Linux kernel and bbl.
+* A buildroot based rootfs.
+* A Debian Sid (aka Unstable) based rootfs.
+* A QEMU model of the virt RISCV machine with support for PCIe
+* A Docker image containing all of the above.
 
 ### Getting Started
 
-The best way to get started is to download the image for this
-container directly from Doc Hub and then run the container and play
-inside it. Here are the steps for that.
+1. Generate a static qemu-riscv64-static user emaulation binary. On
+some systems this is as simple as apt-get install qemu-static. In
+other cases this is more complicated. Note that the docker image will
+generate this for its own purposes so if you are clever you can copy
+out that one. You also need to ensure binfmt is updated to support the
+detection of RISCV executables.
 
-   1. Install docker on your client.
-   2. docker pull sbates130272/riscv
-   3. docker run -it sbates130272/riscv
-   4. cd into one of the sub-folders of /opt/riscv and play. For
-   example in the /opt/riscv folder you can run
-   ```
-   spike -m128 -p1 +disk=root.bin.sqsh bbl linux-4.1.y/vmlinux
-   ```
-   to kick off the spike ISA simulator on a root filesystem awith
-   busybox nd the 3.14.41 version of the Linux kernel.
+2. Generate the bare-bones Debian sid root filesystem (rootfs) for
+RISC-V. You can do that using something like:
+	```
+	sudo ROOTFS=multistrap-rootfs INTERP=/opt/qemu/bin/qemu-riscv64-static ./create-rootfs
+	```
+	Review the arguments section of create-rootfs to see how to alter the
+hostname and root password. In this case a 8GB raw qemu image file
+will be created called multistrap-rootfs.img.
 
-   5. You can attach external directories for access inside the docker
-   container:
+3. Build the docker image using something like:
+	```
+	docker build .
+	```
+Do note this will take a loooong time (2-3 hours on some systems).
 
+4. Spin up a container based on the resultant image. This should put
+you in a working folder at the top level of the Eideticom fork of
+freedom-u-sdk. You should have access to all the tools, kernel source
+and buildroot code. You can also do something like:
+	```
+	make qemu
+	```
+	to run a buildroot based qemu. Or:
+	```
+	make qemu-debian
+	```
+	to run the Debian sid based rootfs which also includes a couple of
+virtual NVM Express (NVMe SSDs). Or you can use docker run to run the
+qemu from outside the container using:
+	```
+	docker run <tag> make qemu-debian
+	```
+
+### Updating the Debian Sid RootFS
+
+Note that the Debian RootFS is generated outside the container and
+copied in. This allows you to update the external image file and
+docker will pull in the updated image file the next time the container
+is built. Of course any changes to the image file inside the container
+will be ephemeral. Another option (and possible pull request) would be
+to add an option to mount through the container to point to the host
+version of the image file.
+
+### Issues
+
+1. Currently there are some issues with debootstrap for RISCV
+Sid. Hence we use the more flexible multistrap.
+1. The Sid git package has a issue (broken dependency on git-man). So
+instead we copy in a hacked fix (git_sbates.deb) in the /root
+folder. Run:
 ```
-   docker run -it -w $PWD -v $PWD:$PWD sbates130272/riscv
+dpkg -i /root/git_bates.deb
 ```
+to install git. Hopefully this will be fixed soon in Sid and we can
+remove this step for people who want git.
 
 ### Notes
 
-   1. Note this Dockerfile does not run through the automated build
-   process because it exceeds the two hour build limit.
+1. Note this Dockerfile does not run through the automated build
+process on Docker Hub because it exceeds the two hour build limit. If
+someone is interested in hosting this and paying for it them please
+let us know via an issues ticket on the GitHub repo.
+
+Stephen Bates <sbates@raithlin.com>
+Andrew Maier <andrew.maier@eideticom.com>

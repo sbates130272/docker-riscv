@@ -1,0 +1,121 @@
+#!/bin/bash
+# (c) Stephen Bates, Eideticom 2018
+#
+# A simple script to generate assist in generating a Debian Sid rootfs
+# using multistrap.
+#
+# NB This script must be run as root!
+#
+# NB In order to work you *must* have binfmt setup to support a RISCV
+# interperter and you *probably* need to copy that interperter into
+# the rootfs. Use the INTERP input argument to do that.
+#
+# NB. For now git dependencies are broken. Copy in a hacked .deb file.
+
+set +e
+
+if [ "$EUID" -ne 0 ]; then
+  echo "This script must be run as root"
+  exit 1
+fi
+
+SIZE=${SIZE:-1G}
+ROOTFS=${ROOTFS:-debian-sid-riscv64-rootfs}
+INTERP=${INTERP:-}
+CREATE=${CREATE:-yes}
+PASSWD=${PASSWD:-sifive}
+HOST=${HOST:-libertas}
+
+if [ $CREATE == "yes" ]; then
+
+    rm -rf ${ROOTFS}
+    multistrap -d ${ROOTFS} -f multistrap-riscv64.conf
+    if [ $INTERP != "" ]; then
+	cp --parents ${INTERP} ${ROOTFS}
+    fi
+
+    export DEBIAN_FRONTEND=noninteractive
+    export DEBCONF_NONINTERACTIVE_SEEN=true
+    export LC_ALL=C
+    export LANGUAGE=C
+    export LANG=C
+
+    chroot $ROOTFS /var/lib/dpkg/info/dash.preinst install
+    chroot $ROOTFS dpkg --configure -a
+
+    mount proc -t proc $ROOTFS/proc
+
+    function cleanup {
+	set +e
+	umount $ROOTFS/proc 2> /dev/null#
+    }
+    trap cleanup EXIT
+
+    chroot $ROOTFS dpkg --configure -a
+
+    ln -fs /proc/mounts $ROOTFS/etc/mtab
+    umount $ROOTFS/proc
+
+    mknod -m 666 "${ROOTFS}/dev/null" c 1 3
+    mknod -m 666 "${ROOTFS}/dev/zero" c 1 5
+    mknod -m 666 "${ROOTFS}/dev/random" c 1 8
+    mknod -m 666 "${ROOTFS}/dev/urandom" c 1 9
+    mknod -m 666 "${ROOTFS}/dev/tty" c 5 0
+    mknod -m 666 "${ROOTFS}/dev/ptmx" c 5 2
+    mknod -m 666 "${ROOTFS}/dev/full" c 1 7
+    mknod -m 600 "${ROOTFS}/dev/console" c 5 1
+    mknod -m 660 "${ROOTFS}/dev/ttyS0" c 4 64
+    mkdir -p "${ROOTFS}/dev/pts/"
+    mkdir -p "${ROOTFS}/dev/shm/"
+    mknod -m 666 "${ROOTFS}/dev/ptmx" c 5 2
+    ln -s /proc/self/fd   "${ROOTFS}/dev/fd"
+    ln -s /proc/self/fd/0 "${ROOTFS}/dev/stdin"
+    ln -s /proc/self/fd/1 "${ROOTFS}/dev/stdout"
+    ln -s /proc/self/fd/2 "${ROOTFS}/dev/stderr"
+
+fi
+chroot $ROOTFS chpasswd <<< root:${PASSWD}
+chroot $ROOTFS /bin/sh -c 'echo '${HOST}' > /etc/hostname'
+
+cat << EOF > ${ROOTFS}/etc/resolv.conf
+nameserver 4.4.2.2
+nameserver 8.8.8.8
+EOF
+
+cat > $ROOTFS/etc/fstab << EOF
+proc               /proc             proc    defaults          0       0
+sysfs              /sys              sysfs   defaults          0       0
+tmpfs              /tmp              tmpfs   defaults          0       0
+/dev/vda0          /                 ext4    rw,relatime,data=ordered 0 0
+EOF
+
+cat > ${ROOTFS}/etc/network/interfaces << EOF
+source-directory /etc/network/interfaces.d
+auto lo
+iface lo inet loopback
+
+allow-hotplug enp0s1
+iface enp0s1 inet dhcp
+
+allow-hotplug eth0
+iface eth0 inet dhcp
+EOF
+
+cat << EOF > ${ROOTFS}/etc/apt/sources.list
+deb http://deb.debian.org/debian-ports/ sid main
+deb-src http://deb.debian.org/debian-ports/ sid main
+EOF
+
+chroot ${ROOTFS} export TERM=vt102
+chroot ${ROOTFS} dpkg --configure -a
+chroot ${ROOTFS} /bin/sh -c \
+       'echo "S0:23:respawn:/sbin/getty -L ttyS0 115200 vt102" >> /etc/inittab'
+
+cp git_bates.deb ${ROOTFS}/root/
+
+qemu-img create -f raw ${ROOTFS}.img ${SIZE}
+mkfs.ext4 ${ROOTFS}.img
+mkdir -p /tmp/${ROOTFS}
+mount -t ext4 ${ROOTFS}.img /tmp/${ROOTFS} -o loop
+cp -r ${ROOTFS}/* /tmp/${ROOTFS}
+umount /tmp/${ROOTFS}

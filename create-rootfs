@@ -1,0 +1,44 @@
+#!/bin/bash
+# (c) Stephen Bates, Eideticom 2018
+#
+# A simple script to generate assist in generating a Debian Sid rootfs
+# using deboostrap.
+#
+# NB This script must be run as root!
+#
+# NB In order to work you *must* have binfmt setup to support a RISCV
+# interperter and you *probably* need to copy that interperter into
+# the rootfs. Use the INTERP input argument to do that.
+
+set +e
+
+if [ "$EUID" -ne 0 ]; then
+  echo "This script must be run as root"
+  exit 1
+fi
+
+SIZE=${SIZE:-8G}
+ROOTFS=${ROOTFS:-debian-sid-riscv64-rootfs}
+INTERP=${INTERP:-}
+CREATE=${CREATE:-yes}
+PASSWD=${PASSWD:-sifive}
+
+if [ $CREATE == "yes" ]; then
+
+    debootstrap --no-check-gpg --arch riscv64 --foreign sid \
+		${ROOTFS} http://deb.debian.org/debian-ports/
+
+    if [ -z $INTERP ]; then
+	cp ${INTERP} ${ROOTFS}/$INTERP
+    fi
+    
+    chroot  /debootstrap/debootstrap --second-stage
+fi
+chroot $ROOTFS chpasswd <<< root:${PASSWD}
+
+qemu-img create -f raw ${ROOTFS}.img ${SIZE}
+mkfs.ext4 ${ROOTFS}.img
+mkdir -p /tmp/${ROOTFS}
+mount -t ext4 ${ROOTFS}.img /tmp/${ROOTFS} -o loop
+cp -r ${ROOTFS}/* /tmp/${ROOTFS}
+umount /tmp/${ROOTFS}

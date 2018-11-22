@@ -1,12 +1,11 @@
 #
-# RISC-V Dockerfile
+# RISC-V freedom-u-sdk Dockerfile
 #
-# https://github.com/sbates130272/docker-RV
+# https://github.com/sbates130272/docker-riscv
 #
 # This Dockerfile creates a container full of lots of useful tools for
-# RISC-V development. See associated README.md for more
-# information. This Dockerfile is mostly based on the instructions
-# found at https://github.com/RV/riscv-tools.
+# RISC-V development on the freedom-u board from SiFive. See
+# associated README.md for more information.
 
 FROM ubuntu:16.04
 
@@ -24,6 +23,7 @@ RUN apt-get update && apt-get install -y \
 	build-essential \
 	cpio \
 	curl \
+	debootstrap \
 	emacs24-nox \
 	flex \
 	gawk \
@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y \
 	libmpfr-dev \
 	libpixman-1-dev \
 	libtool \
+	man \
 	ncurses-dev \
 	patchutils \
 	pkg-config \
@@ -42,7 +43,8 @@ RUN apt-get update && apt-get install -y \
 	squashfs-tools \
 	sudo \
 	texinfo \
-    tmux \
+	tmux \
+	tree \
 	wget \
 	unzip \
 	vim \
@@ -51,7 +53,7 @@ RUN apt-get update && apt-get install -y \
 # Make a working folder and set the necessary environment variables.
 ENV RV /opt/riscv
 ENV NUMJOBS 16
-ENV FREEDOMCHECKOUT eidetic
+ENV FREEDOMCHECKOUT dev/stephen
 RUN mkdir -p $RV
 
 # Add the GNU utils bin folder to the path.
@@ -69,3 +71,23 @@ RUN git submodule update --recursive --init
 WORKDIR $RV/freedom-u-sdk
 RUN make -j $NUMJOBS
 RUN make -j $NUMJOBS prep-qemu
+
+# Start the rootfs generation in rootfs-debian. We can now use
+# debootstrap for this. We use --foreign since we are assuming you are
+# not runing this docker build on a riscv64 SoC (but one day that
+# assumption may no longer hold ;-)).
+
+WORKDIR $RV/freedom-u-sdk
+RUN debootstrap --arch riscv64 --foreign sid rootfs-debian \
+  http://deb.debian.org/debian-ports/
+RUN cp work/riscv-qemu/prefix/bin/qemu-riscv64 \
+  /root/qemu-riscv64-static
+
+# In order to complete the rootfs generation we need to interact with the
+# host system outside the container. Refer for the README associated
+# with this Dockerfile repo for information on that. That step outside
+# the container should result in a bootable Debian Sid rootfs image
+# file that will work in both QEMU and on real hardware.
+
+WORKDIR $RV/freedom-u-sdk
+RUN chroot rootfs-debian /debootstrap/debootstrap --second-stage

@@ -121,6 +121,8 @@ chroot ${ROOTFS} export TERM=vt102
 chroot ${ROOTFS} dpkg --configure -a
 chroot ${ROOTFS} /bin/sh -c 'echo "S0:23:respawn:/sbin/getty -L ttyS0 115200 vt102" >> /etc/inittab'
 
+cp git_bates.deb ${ROOTFS}/root/
+
 qemu-img create -f raw ${ROOTFS}.img ${SIZE}
 mkfs.ext4 ${ROOTFS}.img
 mkdir -p /tmp/${ROOTFS}

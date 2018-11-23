@@ -59,9 +59,10 @@ if [ $CREATE == "yes" ]; then
     cat > $ROOTFS/etc/fstab << EOF
 proc               /proc             proc    defaults          0       0
 sysfs              /sys              sysfs   defaults          0       0
-debugfs            /sys/kernel/debug debugfs defaults          0       0
 tmpfs              /tmp              tmpfs   defaults          0       0
+/dev/vda0          /                 ext4    rw,relatime,data=ordered 0 0
 EOF
+#debugfs            /sys/kernel/debug debugfs defaults          0       0
 
     ln -fs /proc/mounts $ROOTFS/etc/mtab
     umount $ROOTFS/proc
@@ -98,6 +99,9 @@ source-directory /etc/network/interfaces.d
 auto lo
 iface lo inet loopback
 
+allow-hotplug enp0s1
+iface enp0s1 inet dhcp
+
 allow-hotplug eth0
 iface eth0 inet dhcp
 EOF
@@ -109,8 +113,8 @@ EOF
 #EOF
 
 cat << EOF > ${ROOTFS}/etc/apt/sources.list
-deb http://ftp.ports.debian.org/debian-ports/ sid main
-deb-src http://ftp.ports.debian.org/debian-ports/ sid main
+deb http://deb.debian.org/debian-ports/ sid main
+deb-src http://deb.debian.org/debian-ports/ sid main
 EOF
 
 chroot ${ROOTFS} export TERM=vt102

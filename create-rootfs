@@ -22,19 +22,49 @@ ROOTFS=${ROOTFS:-debian-sid-riscv64-rootfs}
 INTERP=${INTERP:-}
 CREATE=${CREATE:-yes}
 PASSWD=${PASSWD:-sifive}
+HOST=${HOST:-libertas}
 
 if [ $CREATE == "yes" ]; then
 
-    debootstrap --no-check-gpg --arch riscv64 --foreign sid \
-		${ROOTFS} http://deb.debian.org/debian-ports/
-
-    if [ -z $INTERP ]; then
-	cp ${INTERP} ${ROOTFS}/$INTERP
-    fi
-    
-    chroot  /debootstrap/debootstrap --second-stage
+    rm -rf ${ROOTFS}
+    debootstrap --no-check-gpg --arch riscv64 --foreign \
+		sid ${ROOTFS} \
+		http://ftp.ports.debian.org/debian-ports/
+    if [ $INTERP != "" ]; then
+	cp --parents ${INTERP} ${ROOTFS}
+    fi    
+    chroot ${ROOTFS} /debootstrap/debootstrap --second-stage
 fi
 chroot $ROOTFS chpasswd <<< root:${PASSWD}
+chroot $ROOTFS /bin/sh -c 'echo '${HOST}' > /etc/hostname'
+
+cat << EOF > ${ROOTFS}/etc/resolv.conf
+nameserver 4.4.2.2
+nameserver 8.8.8.8
+EOF
+
+cat > ${ROOTFS}/etc/network/interfaces << EOF
+source-directory /etc/network/interfaces.d
+auto lo
+iface lo inet loopback
+
+allow-hotplug eth0
+iface eth0 inet static
+address 10.0.2.15
+netmask 255.0.0.0
+gateway 10.0.2.1
+EOF
+
+cat > ${ROOTFS}/etc/fstab << EOF
+proc    /proc   proc    defaults        0       0
+sysfs   /sys    sysfs   defaults,nofail 0       0
+devpts  /dev/pts        devpts  defaults,nofail 0       0
+EOF
+
+cat << EOF > ${ROOTFS}/etc/apt/sources.list
+deb http://ftp.ports.debian.org/debian-ports/ sid main
+deb-src http://ftp.ports.debian.org/debian-ports/ sid main
+EOF
 
 qemu-img create -f raw ${ROOTFS}.img ${SIZE}
 mkfs.ext4 ${ROOTFS}.img

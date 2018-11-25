@@ -52,7 +52,11 @@ and buildroot code. You can also do something like:
 	make qemu-debian
 	```
 	to run the Debian sid based rootfs which also includes a couple of
-virtual NVM Express (NVMe SSDs).
+virtual NVM Express (NVMe SSDs). Or you can use docker run to run the
+qemu from outside the container using:
+	```
+	docker run <tag> make qemu-debian
+	```
 
 ### Updating the Debian Sid RootFS
 

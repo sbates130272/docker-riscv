@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y \
 	squashfs-tools \
 	sudo \
 	texinfo \
-    tmux \
+	tmux \
 	wget \
 	unzip \
 	vim \
@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install -y \
 # Make a working folder and set the necessary environment variables.
 ENV RV /opt/riscv
 ENV NUMJOBS 16
-ENV FREEDOMCHECKOUT eidetic
+ENV FREEDOMCHECKOUT 0cf938a80a3cf382083cb12e289892f5ef4a7741
 RUN mkdir -p $RV
 
 # Add the GNU utils bin folder to the path.

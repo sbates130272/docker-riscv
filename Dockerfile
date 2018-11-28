@@ -1,12 +1,11 @@
 #
-# RISC-V Dockerfile
+# RISC-V freedom-u-sdk Dockerfile
 #
-# https://github.com/sbates130272/docker-RV
+# https://github.com/sbates130272/docker-riscv
 #
 # This Dockerfile creates a container full of lots of useful tools for
-# RISC-V development. See associated README.md for more
-# information. This Dockerfile is mostly based on the instructions
-# found at https://github.com/RV/riscv-tools.
+# RISC-V development on the freedom-u board from SiFive. See
+# associated README.md for more information.
 
 FROM ubuntu:16.04
 
@@ -69,3 +68,25 @@ RUN git submodule update --recursive --init
 WORKDIR $RV/freedom-u-sdk
 RUN make -j $NUMJOBS
 RUN make -j $NUMJOBS prep-qemu
+
+# Copy in the debian rootfs and make the nvme image files needed to
+# run qemu-debian
+
+WORKDIR $RV/freedom-u-sdk
+ENV PATH="${RV}/freedom-u-sdk/work/riscv-qemu/prefix/bin:${PATH}"
+RUN make -j $NUMJOBS nvme0.qcow2 nvme1.qcow2
+COPY multistrap-rootfs.img debian-sid-riscv64-rootfs.img
+
+# We should now be ready to run something like:
+#
+# docker run -it <tag>
+# make qemu-debian
+# root:sifive is the user/password combo
+#
+# Note attempting to do:
+# docker run <tag> make qemu-debian
+# does appear to work. Not sure why...
+#
+# Which should launch a dockerized version of QEMU's riscv64 virt
+# machine with PCIe support on a p2pdma enabled kernel and with some
+# NVMe drives in the system. Enjoy!
